@@ -126,6 +126,7 @@ func getCommand(args []string) {
 func sendCommand(args []string) {
 	flagSet := flag.NewFlagSet("get", flag.ExitOnError)
 	nicksFlag := flagSet.Bool("nicks", false, "Send with player names")
+	sourceAddFlag := flagSet.String("saddr", ":0", "Source UDP address")
 	flagSet.Usage = func() {
 		println("Usage: eimaster client send [-nicks] [--] <addr>\n")
 		println("Send a fake server info to specified master server\n")
@@ -145,11 +146,19 @@ func sendCommand(args []string) {
 			"Try 'client get -h' for mor information")
 	}
 
-	addr := flagSet.Arg(0)
-	if !strings.Contains(addr, ":") {
-		addr += ":28004"
+	masterAddr := flagSet.Arg(0)
+	if !strings.Contains(masterAddr, ":") {
+		masterAddr += ":28004"
 	}
-	udpAddr, _ := net.ResolveUDPAddr("udp", addr)
+
+	sourceAddr, err := net.ResolveUDPAddr("udp", *sourceAddFlag)
+	if err != nil {
+		log.Fatalf("Failed to resolve %s addr: %v", *sourceAddFlag, err)
+	}
+	udpAddr, err := net.ResolveUDPAddr("udp", masterAddr)
+	if err != nil {
+		log.Fatalf("Failed to resolve %s addr: %v", masterAddr, err)
+	}
 
 	game := eimasterlib.EIGameInfo{
 		ClientID:        0xABBACAFE,
@@ -163,7 +172,7 @@ func sendCommand(args []string) {
 		PlayerNames:     []string{"fake1", "fake2", "fake3"},
 	}
 
-	conn, err := net.DialUDP("udp", nil, udpAddr)
+	conn, err := net.DialUDP("udp", sourceAddr, udpAddr)
 	if err != nil {
 		log.Fatalf("net.DialUDP failed: %s", err)
 	}
