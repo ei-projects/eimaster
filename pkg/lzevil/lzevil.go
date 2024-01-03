@@ -225,7 +225,7 @@ func NewReader(r io.Reader) io.Reader {
 func (lzr *lzReader) init() bool {
 	lzr.err = binary.Read(lzr.reader, binary.LittleEndian, &lzr.originalSize)
 	lzr.br = newBitsReader(lzr.reader)
-	if lzr.err == io.EOF {
+	if errors.Is(lzr.err, io.EOF) {
 		lzr.err = io.ErrUnexpectedEOF
 	}
 	if lzr.err == nil && lzr.originalSize < 0 {
@@ -274,7 +274,7 @@ func (lzr *lzReader) Read(p []byte) (int, error) {
 
 func Compress(data []byte) []byte {
 	var buf bytes.Buffer
-	if n, err := NewWriter(&buf, len(data)).Write(data); n != len(data) || err != io.EOF {
+	if n, err := NewWriter(&buf, len(data)).Write(data); n != len(data) || !errors.Is(err, io.EOF) {
 		panic("Unexpected error")
 	}
 	return buf.Bytes()

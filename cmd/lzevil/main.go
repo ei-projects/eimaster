@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"io"
 	"os"
@@ -27,7 +28,7 @@ func main() {
 		writer = lzevil.NewWriter(writer, int(inputSize))
 	}
 
-	if _, err := io.Copy(writer, reader); err != nil && err != io.EOF {
+	if _, err := io.Copy(writer, reader); err != nil && !errors.Is(err, io.EOF) {
 		println("Unexpected error: " + err.Error())
 		os.Exit(1)
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 func unexpectEOF(err error) error {
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		return io.ErrUnexpectedEOF
 	}
 	return err

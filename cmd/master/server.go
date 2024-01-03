@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	golog "log"
@@ -39,11 +40,6 @@ var runCmd = cobra.Command{
 	},
 }
 var serverCmds = []*cobra.Command{&runCmd}
-
-var cmdServer = &cobra.Command{
-	Use:   "server",
-	Short: "Server commands",
-}
 
 var (
 	servUpdates = make(chan *master.EIServerInfo, 100)
@@ -106,7 +102,7 @@ func handleServerInfo(pc net.PacketConn, addr net.Addr, data []byte) {
 func serversReciever(ctx context.Context) error {
 	pc, err := net.ListenPacket("udp", serverMainAddr)
 	if err != nil {
-		return fmt.Errorf("Failed to listen udp:%s: %s", serverMainAddr, err.Error())
+		return fmt.Errorf("failed to listen udp:%s: %w", serverMainAddr, err)
 	}
 	defer pc.Close()
 
@@ -169,7 +165,7 @@ func sendServersInfo(conn net.Conn) {
 func serversSender(ctx context.Context) error {
 	listener, err := net.Listen("tcp", serverMainAddr)
 	if err != nil {
-		return fmt.Errorf("Failed to listen on tcp addr %s: %s", serverMainAddr, err.Error())
+		return fmt.Errorf("failed to listen on tcp addr %s: %w", serverMainAddr, err)
 	}
 	defer listener.Close()
 
@@ -194,8 +190,6 @@ func serversSender(ctx context.Context) error {
 	}
 }
 
-type httpHandler struct{}
-
 func serversSenderJSON(ctx context.Context) error {
 	handler := http.NewServeMux()
 	handler.HandleFunc(serverHttpPrefix, func(w http.ResponseWriter, req *http.Request) {
@@ -216,9 +210,10 @@ func serversSenderJSON(ctx context.Context) error {
 	logWriter := log.Writer()
 	defer logWriter.Close()
 	server := http.Server{
-		Addr:     serverHttpAddr,
-		ErrorLog: golog.New(logWriter, "", 0),
-		Handler:  handler,
+		Addr:              serverHttpAddr,
+		ErrorLog:          golog.New(logWriter, "", 0),
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	doneChan := make(chan error, 1)
@@ -337,7 +332,7 @@ func serverMainLoop() {
 		go func() {
 			defer wg.Done()
 			err := f(ctx)
-			if err == context.Canceled {
+			if errors.Is(err, context.Canceled) {
 				log.Debugf("%s cancelled", name)
 			} else {
 				log.Errorf("%s failed: %s", name, err)

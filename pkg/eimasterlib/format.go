@@ -160,7 +160,7 @@ func readString(r io.Reader, str *string) error {
 		return err
 	}
 	if length > 1024*1024 {
-		return errors.New("Length is too big")
+		return errors.New("length is too big")
 	}
 	if length == 0 {
 		*str = ""
@@ -244,10 +244,10 @@ func ReadGameInfo(r io.Reader, full bool, game *EIGameInfo) error {
 		checkErrNoEOF(&err, readPlayerNames(r, &game.PlayerNames))
 	}
 	if err == nil && protoMagic != eiProtoMagic {
-		err = fmt.Errorf("Invalid proto magic: expected %08X got %08X", eiProtoMagic, protoMagic)
+		err = fmt.Errorf("invalid proto magic: expected %08X got %08X", eiProtoMagic, protoMagic)
 	}
 	if err == nil && nicksMagic != eiNicksMagic {
-		err = fmt.Errorf("Invalid nicks magic: expected %08X got %08X", eiNicksMagic, nicksMagic)
+		err = fmt.Errorf("invalid nicks magic: expected %08X got %08X", eiNicksMagic, nicksMagic)
 	}
 	return err
 }
@@ -279,10 +279,10 @@ func ReadMasterResponse(r io.Reader, game *EIGameInfo) error {
 	checkErrNoEOF(&err, readLE(r, &clientID))
 	checkErrNoEOF(&err, readLE(r, &masterToken))
 	if err == nil && magic != 0xFF {
-		err = fmt.Errorf("Invalid magic: expected FF got %02X", magic)
+		err = fmt.Errorf("invalid magic: expected FF got %02X", magic)
 	}
 	if err == nil && clientID != game.ClientID {
-		err = fmt.Errorf("Invalid client id: expected %08X got %08X", game.ClientID, clientID)
+		err = fmt.Errorf("invalid client id: expected %08X got %08X", game.ClientID, clientID)
 	}
 	if err == nil {
 		game.MasterToken = masterToken
@@ -307,7 +307,7 @@ func ReadServerInfo(r io.Reader, full bool, srv *EIServerInfo) error {
 		if udpAddr := eiAddr.GetUDPAddr(); udpAddr != nil {
 			srv.Addr = *udpAddr
 		} else {
-			err = errors.New("Cannot parse server address")
+			err = errors.New("cannot parse server address")
 		}
 	}
 	return err
@@ -317,7 +317,7 @@ func WriteServerInfo(w io.Writer, full bool, srv *EIServerInfo) error {
 	var err error
 	eiAddr, err := NewEIServerAddr(&srv.Addr)
 	if err != nil {
-		return fmt.Errorf("Cannot serialize server address: %s", err)
+		return fmt.Errorf("cannot serialize server address: %w", err)
 	}
 	checkErr(&err, eiAddr.Write(w))
 	checkErr(&err, WriteGameInfo(w, full, &srv.EIGameInfo))
@@ -334,7 +334,7 @@ func ReadServersList(r io.Reader, full bool, res *[]EIServerInfo) error {
 		}
 		servers = append(servers, srv)
 	}
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		err = nil
 	}
 	*res = servers

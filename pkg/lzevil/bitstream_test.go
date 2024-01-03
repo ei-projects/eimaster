@@ -2,6 +2,7 @@ package lzevil
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"testing"
 )
@@ -21,7 +22,7 @@ func TestReaderErr(t *testing.T) {
 		for br.err == nil {
 			br.readBits(test.bitsLen)
 		}
-		if br.err != test.expectedErr {
+		if !errors.Is(br.err, test.expectedErr) {
 			t.Errorf("For %d bits unexpected err is '%v'. Expected err is '%v'",
 				test.bitsLen, br.err, test.expectedErr)
 		}
