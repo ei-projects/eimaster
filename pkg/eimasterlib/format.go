@@ -21,23 +21,23 @@ type EIServerAddr struct {
 }
 
 type EIGameInfo struct {
-	ClientID        uint32
-	MasterToken     uint32
-	Name            string
-	Quest           string
-	PlayersCount    uint8
-	MaxPlayersCount uint8
-	HasPassword     bool
-	AllodIndex      uint8
-	PlayerNames     []string
+	ClientID        uint32   `json:"-"`
+	MasterToken     uint32   `json:"-"`
+	Name            string   `json:"name"`
+	Quest           string   `json:"quest"`
+	PlayersCount    uint8    `json:"players_count"`
+	MaxPlayersCount uint8    `json:"max_players_count"`
+	HasPassword     bool     `json:"has_password"`
+	AllodIndex      uint8    `json:"allod_index"`
+	PlayerNames     []string `json:"player_names,omitempty"`
 }
 
 type EIServerInfo struct {
-	Addr net.UDPAddr
+	Addr net.UDPAddr `json:"addr"`
 	EIGameInfo
-	AppearTime time.Time
-	LastUpdate time.Time
-	Ping       int
+	AppearTime time.Time `json:"appear_time"`
+	LastUpdate time.Time `json:"last_update"`
+	Ping       int       `json:"ping"`
 }
 
 func NewEIServerAddr(addr *net.UDPAddr) (eiAddr *EIServerAddr, err error) {
