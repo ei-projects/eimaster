@@ -57,7 +57,7 @@ func pingServer(srv *eimasterlib.EIServerInfo, timeout time.Duration) {
 	conn.SetDeadline(startTime.Add(timeout))
 
 	msg := []byte{3, 0, 0, 0}
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 5; i++ {
 		n, err := conn.Write(msg)
 		if n < len(msg) || err != nil {
 			log.Errorf("conn.Write failed: %s. %d bytes were read", err, n)
@@ -77,6 +77,9 @@ func pingServer(srv *eimasterlib.EIServerInfo, timeout time.Duration) {
 		}
 	}
 	srv.Ping = ping
+	if srv.Ping > 0 {
+		srv.WasPingable = true
+	}
 }
 
 func pingServers(servers []eimasterlib.EIServerInfo) {
@@ -85,7 +88,7 @@ func pingServers(servers []eimasterlib.EIServerInfo) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			pingServer(&servers[i], 2000*time.Millisecond)
+			pingServer(&servers[i], 2500*time.Millisecond)
 		}(i)
 	}
 	wg.Wait()

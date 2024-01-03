@@ -251,7 +251,7 @@ func maintainServerList(ctx context.Context) error {
 	go func() {
 		for srv := range pingsChan {
 			go func(srv *master.EIServerInfo) {
-				pingServer(srv, 2000*time.Millisecond)
+				pingServer(srv, 2500*time.Millisecond)
 				pingsUpdates <- srv
 			}(srv)
 		}
@@ -298,7 +298,8 @@ func maintainServerList(ctx context.Context) error {
 				// Reuse some parameters from existing server
 				updSrv.AppearTime = existingSrv.AppearTime
 				updSrv.Ping = existingSrv.Ping
-				if existingSrv.Ping > 0 && updSrv.Ping == 0 {
+				if existingSrv.WasPingable && updSrv.Ping == 0 {
+					// Keep address from existing server if it was pingable.
 					updSrv.Addr = existingSrv.Addr
 				}
 				*existingSrv = *updSrv
