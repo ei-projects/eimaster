@@ -45,33 +45,38 @@ func getHexDump(bytes []byte) string {
 	return result
 }
 
-func pingServer(srv *eimasterlib.EIServerInfo, timeoutMS time.Duration) {
+func pingServer(srv *eimasterlib.EIServerInfo, timeout time.Duration) {
 	conn, err := net.DialUDP("udp", nil, &srv.Addr)
 	if err != nil {
 		log.Errorf("net.DialUDP failed: %s", err)
 		return
 	}
+	defer conn.Close()
 
 	startTime := time.Now()
-	conn.SetDeadline(startTime.Add(timeoutMS * time.Millisecond))
+	conn.SetDeadline(startTime.Add(timeout))
 
 	msg := []byte{3, 0, 0, 0}
-	n, err := conn.Write(msg)
-	if n < len(msg) || err != nil {
-		log.Errorf("conn.Write failed: %s. %d bytes were read", err, n)
-		return
+	for i := 0; i < 3; i++ {
+		n, err := conn.Write(msg)
+		if n < len(msg) || err != nil {
+			log.Errorf("conn.Write failed: %s. %d bytes were read", err, n)
+			return
+		}
 	}
 
+	ping := 0
 	buf := make([]byte, 256)
-	n, err = conn.Read(buf)
+	n, _ := conn.Read(buf)
 	if n > 0 {
-		srv.Ping = int(time.Now().Sub(startTime).Milliseconds())
-		if srv.Ping == 0 {
-			srv.Ping = 1
+		ping = int(time.Since(startTime).Milliseconds())
+		if ping == 0 {
+			ping = 1
+		} else if ping < 0 {
+			ping = 0
 		}
-	} else {
-		srv.Ping = 0
 	}
+	srv.Ping = ping
 }
 
 func pingServers(servers []eimasterlib.EIServerInfo) {
@@ -80,7 +85,7 @@ func pingServers(servers []eimasterlib.EIServerInfo) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			pingServer(&servers[i], 500)
+			pingServer(&servers[i], 2000*time.Millisecond)
 		}(i)
 	}
 	wg.Wait()
