@@ -311,6 +311,9 @@ func maintainServerList(ctx context.Context) error {
 					// Keep address from existing server if it was pingable.
 					updSrv.Addr = existingSrv.Addr
 				}
+				if updSrv.IsSentByOrigGame() {
+					updSrv.PlayerNames = existingSrv.PlayerNames
+				}
 				*existingSrv = *updSrv
 			}
 
