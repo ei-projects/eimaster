@@ -155,8 +155,16 @@ func sendServersInfo(conn net.Conn) {
 	w := lzevil.NewWriter(&buf2, buf1.Len())
 	w.Write(buf1.Bytes())
 
-	binary.Write(conn, binary.LittleEndian, uint32(buf2.Len()+4))
-	conn.Write(buf2.Bytes())
+	buf1.Reset()
+	binary.Write(&buf1, binary.LittleEndian, uint32(buf2.Len()+4))
+	buf1.Write(buf2.Bytes())
+
+	conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
+	_, err = io.Copy(conn, &buf1)
+	if err != nil {
+		log.Warnf("Failed to send servers list to %s: %s", conn.RemoteAddr(), err)
+		return
+	}
 
 	// The game needs this delay for some reason... Test client works fine without it
 	time.Sleep(100 * time.Millisecond)
