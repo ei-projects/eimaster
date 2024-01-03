@@ -306,7 +306,8 @@ func maintainServerList(ctx context.Context) error {
 				// Reuse some parameters from existing server
 				updSrv.AppearTime = existingSrv.AppearTime
 				updSrv.Ping = existingSrv.Ping
-				if existingSrv.WasPingable && updSrv.Ping == 0 {
+				updSrv.LastSuccessfulPing = existingSrv.LastSuccessfulPing
+				if time.Since(existingSrv.LastSuccessfulPing) < 2*time.Minute {
 					// Keep address from existing server if it was pingable.
 					updSrv.Addr = existingSrv.Addr
 				}
@@ -317,6 +318,7 @@ func maintainServerList(ctx context.Context) error {
 			existingSrv := findServer(updSrv, servList)
 			if existingSrv != nil {
 				existingSrv.Ping = updSrv.Ping
+				existingSrv.LastSuccessfulPing = updSrv.LastSuccessfulPing
 			}
 
 		case servLists <- servListToSend:

@@ -35,10 +35,10 @@ type EIGameInfo struct {
 type EIServerInfo struct {
 	Addr net.UDPAddr `json:"addr"`
 	EIGameInfo
-	AppearTime  time.Time `json:"appear_time"`
-	LastUpdate  time.Time `json:"last_update"`
-	Ping        int       `json:"ping"`
-	WasPingable bool      `json:"was_pingable"`
+	AppearTime         time.Time `json:"appear_time"`
+	LastUpdate         time.Time `json:"last_update"`
+	Ping               int       `json:"ping"`
+	LastSuccessfulPing time.Time `json:"last_successful_ping"`
 }
 
 func NewEIServerAddr(addr *net.UDPAddr) (eiAddr *EIServerAddr, err error) {
