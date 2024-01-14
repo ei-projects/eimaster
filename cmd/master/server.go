@@ -207,6 +207,7 @@ func serversSenderJSON(ctx context.Context) error {
 			return
 		}
 
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Content-Type", "application/json")
 		_, err = w.Write((data))
 		if err != nil {
