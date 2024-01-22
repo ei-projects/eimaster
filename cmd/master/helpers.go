@@ -77,9 +77,6 @@ func pingServer(srv *eimasterlib.EIServerInfo, timeout time.Duration) {
 		}
 	}
 	srv.Ping = ping
-	if srv.Ping > 0 {
-		srv.LastSuccessfulPing = time.Now()
-	}
 }
 
 func pingServers(servers []eimasterlib.EIServerInfo) {

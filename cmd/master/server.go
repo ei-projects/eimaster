@@ -295,7 +295,6 @@ func maintainServerList(ctx context.Context) error {
 				} else {
 					newServList = append(newServList, srv)
 					newServListToSend = append(newServListToSend, *srv.Copy())
-					pingsChan <- srv.Copy()
 				}
 			}
 			servList = newServList
@@ -305,6 +304,7 @@ func maintainServerList(ctx context.Context) error {
 
 		case updSrv := <-servUpdates:
 			existingSrv := findServer(updSrv, servList)
+			pingsChan <- updSrv.Copy()
 
 			if existingSrv == nil {
 				log.Debugf("Received new server: %s", updSrv)
@@ -327,9 +327,21 @@ func maintainServerList(ctx context.Context) error {
 
 		case updSrv := <-pingsUpdates:
 			existingSrv := findServer(updSrv, servList)
-			if existingSrv != nil {
+			if existingSrv == nil {
+				break
+			}
+
+			if updSrv.Ping > 0 {
+				existingSrv.LastSuccessfulPing = time.Now()
+			}
+
+			if existingSrv.Addr.String() == updSrv.Addr.String() {
 				existingSrv.Ping = updSrv.Ping
-				existingSrv.LastSuccessfulPing = updSrv.LastSuccessfulPing
+			} else if updSrv.Ping > 0 &&
+				(existingSrv.Ping <= 0 || existingSrv.Ping > updSrv.Ping) {
+				// Existing addr is not pingable or its ping worse than new one.
+				existingSrv.Addr = updSrv.Addr
+				existingSrv.Ping = updSrv.Ping
 			}
 
 		case servLists <- servListToSend:
