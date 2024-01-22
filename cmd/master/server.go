@@ -241,6 +241,13 @@ func serversSenderJSON(ctx context.Context) error {
 }
 
 func findServer(target *master.EIServerInfo, servList []*master.EIServerInfo) *master.EIServerInfo {
+	// First try to find server with strict equality.
+	for _, srv := range servList {
+		if srv.StrictEquals(target) {
+			return srv
+		}
+	}
+	// Then try to find server with similar parameters.
 	for _, srv := range servList {
 		if srv.Equals(target) {
 			return srv

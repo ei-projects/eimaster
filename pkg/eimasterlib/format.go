@@ -104,13 +104,6 @@ func (srv *EIServerInfo) Copy() *EIServerInfo {
 	return &result
 }
 
-func bool2int(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 func (srv *EIServerInfo) IP() string {
 	host, _, err := net.SplitHostPort(srv.Addr.String())
 	if err != nil {
@@ -123,14 +116,31 @@ func (srv *EIServerInfo) String() string {
 	return fmt.Sprintf("Name: %q, Addr: %s, ClientID: %08X", srv.Name, srv.Addr.String(), srv.ClientID)
 }
 
+func (srv *EIServerInfo) StrictEquals(srv2 *EIServerInfo) bool {
+	sameAddr := srv.Addr.String() == srv2.Addr.String()
+	sameClientID := srv.ClientID == srv2.ClientID
+	sameToken := srv.MasterToken != 0 && srv.MasterToken == srv2.MasterToken
+	return sameClientID && (sameAddr || sameToken)
+}
+
 func (srv *EIServerInfo) Equals(srv2 *EIServerInfo) bool {
-	sameIP := bool2int(srv.IP() == srv2.IP())
-	sameClientID := bool2int(srv.ClientID == srv2.ClientID)
-	sameParams := bool2int(srv.Name == srv2.Name &&
+	sameIP := srv.IP() == srv2.IP()
+	sameClientID := srv.ClientID == srv2.ClientID
+	sameToken := srv.MasterToken != 0 && srv.MasterToken == srv2.MasterToken
+	sameParams := srv.Name == srv2.Name &&
 		srv.AllodIndex == srv2.AllodIndex &&
-		srv.MaxPlayersCount == srv2.MaxPlayersCount)
-	// At least 2 criteries must be the same
-	return sameIP+sameClientID+sameParams >= 2
+		srv.MaxPlayersCount == srv2.MaxPlayersCount
+
+	crits := []bool{sameIP, sameClientID, sameToken, sameParams}
+	sum := 0
+	for _, crit := range crits {
+		if crit {
+			sum++
+		}
+	}
+
+	// At least 2 criteries must be the same.
+	return sum >= 2
 }
 
 func readLength(r io.Reader, length *int) error {
