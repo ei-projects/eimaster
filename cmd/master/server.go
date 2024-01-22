@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	master "github.com/ei-projects/eimaster/pkg/eimasterlib"
@@ -26,6 +27,7 @@ var (
 	serverMainAddr   = "0.0.0.0:28004"
 	serverHttpAddr   = ""
 	serverHttpPrefix = "/"
+	serverState      = ""
 )
 
 var runCmd = cobra.Command{
@@ -36,6 +38,7 @@ var runCmd = cobra.Command{
 		serverMainAddr, _ = cmd.Flags().GetString("addr")
 		serverHttpAddr, _ = cmd.Flags().GetString("http-addr")
 		serverHttpPrefix, _ = cmd.Flags().GetString("http-prefix")
+		serverState, _ = cmd.Flags().GetString("state")
 		serverMainLoop()
 	},
 }
@@ -51,6 +54,7 @@ func init() {
 	runCmd.Flags().String("http-addr", serverHttpAddr,
 		"Set http server address. Don't serve if not set or empty")
 	runCmd.Flags().String("http-prefix", serverHttpPrefix, "Prefix for http servers")
+	runCmd.Flags().String("state", "", "Path to state file")
 }
 
 func handleServerInfo(pc net.PacketConn, addr net.Addr, data []byte) {
@@ -279,6 +283,21 @@ func maintainServerList(ctx context.Context) error {
 	servList := make([]*master.EIServerInfo, 0)
 	servListToSend := make([]master.EIServerInfo, 0)
 
+	// Load state from file if it exists and save it on exit.
+	if serverState != "" {
+		err := loadDataFromGOB(serverState, &servList)
+		if err != nil {
+			log.Errorf("Failed to load state: %s", err)
+		}
+
+		defer func() {
+			err := saveDataToGOB(serverState, &servList)
+			if err != nil {
+				log.Errorf("Failed to save state: %s", err)
+			}
+		}()
+	}
+
 	for {
 		select {
 		case <-ticker.C:
@@ -355,7 +374,7 @@ func maintainServerList(ctx context.Context) error {
 
 func serverMainLoop() {
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		sig := <-c

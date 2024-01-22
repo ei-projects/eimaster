@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"encoding/gob"
 	"fmt"
 	"net"
+	"os"
 	"sync"
 	"time"
 
@@ -89,4 +91,26 @@ func pingServers(servers []eimasterlib.EIServerInfo) {
 		}(i)
 	}
 	wg.Wait()
+}
+
+func saveDataToGOB(path string, data interface{}) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	encoder := gob.NewEncoder(f)
+	return encoder.Encode(data)
+}
+
+func loadDataFromGOB(path string, data interface{}) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	decoder := gob.NewDecoder(f)
+	return decoder.Decode(data)
 }
